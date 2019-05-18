@@ -1,4 +1,4 @@
-var context, width, height, player;
+var context, width, height, player, kills;
 var ins = {}, keys = {}, enemies = [];
 
 window.addEventListener('keydown', function(e) {
@@ -18,10 +18,14 @@ function init() {
     canvas.width = window.innerWidth; //document.width is obsolete
     canvas.height = window.innerHeight;
 
+    context.font = "10px Arial white";
+    context.textAlign = "center"; 
+
     width = canvas.width;
     height = canvas.height;
     console.log(width, height);
     player = new Player(width / 2, height / 2);
+    kills = 0;
 
     setInterval(draw, 10);
 }
@@ -35,7 +39,7 @@ class Player {
         this.x = x;
         this.y = y;
         this.level = 1;
-        this.health = level * 100;
+        this.health = this.level * 100;
     }
     upgrade() {
         this.level++;
@@ -55,7 +59,8 @@ class Player {
         if (39 in keys) this.x++;
         if (40 in keys) this.y++;
         console.log(this.x, this.y);
-        this.health = min(this.level * 100, this.health + 0.01);
+        this.health = Math.min(this.level * 100, this.health + 0.1);
+        context.strokeText(Math.round(this.health), this.x, this.y);
     }
 }
 
@@ -64,6 +69,7 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.id = id;
+        this.health = 100;
     }
     render() {
         context.beginPath();
@@ -87,37 +93,53 @@ class Enemy {
                 move = false;
             }
         }
+        if (player != undefined) {
         var dist = distance(this, player);
-        if (dist < 40 && dist != 0) {
-            touch_player = true;
-            var dxt = (this.x - player.x) / Math.abs(this.x - player.x);
-            var dyt = (this.y - player.y) / Math.abs(this.y - player.y);
-            this.x += dxt;
-            this.y += dyt;
-            move = false;
+            if (dist < 40 && dist != 0) {
+                touch_player = true;
+                var dxt = (this.x - player.x) / Math.abs(this.x - player.x);
+                var dyt = (this.y - player.y) / Math.abs(this.y - player.y);
+                this.x += dxt;
+                this.y += dyt;
+                move = false;
+                this.health -= 0.1;
+                player.health -= 0.2;
+            }
         }
 
         if (move && !touch_player) {
             this.x += dx * Math.random();
             this.y += dy * Math.random();
         }
+        context.strokeText(Math.round(this.health), this.x, this.y);
     }
 }
 
 function draw() {
     // Show with and without clearRect
     context.clearRect(0, 0, width, height);
-    player.render();
-    if (88 in ins) player.upgrade();
+    if (player != undefined) {
+        player.render();
+        if (88 in ins) player.upgrade();
+    }
     for (key in ins) keys[key] = true;
     ins = {};
 
-    if (Math.random() < 0.01 && enemies.length < 5) {
+    if (Math.random() < 0.1 && enemies.length < 5) {
         var enemy = new Enemy(Math.random() * width, Math.random() * height);
         enemies.push(enemy);
     }
 
     for (var i = 0; i < enemies.length; i++) {
         enemies[i].render();
+        if (enemies[i].health <= 0) {
+            enemies.splice(i, 1);
+            i--;
+            kills++;
+        }
+    }
+
+    if (player.health <= 0) {
+        player = undefined;
     }
 }
