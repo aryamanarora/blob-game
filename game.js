@@ -1,4 +1,4 @@
-var context, width, height, player, kills;
+var context, width, height, player;
 var ins = {}, keys = {}, enemies = [];
 
 window.addEventListener('keydown', function(e) {
@@ -54,10 +54,10 @@ class Player {
         context.closePath();
         context.fill();
 
-        if (37 in keys) this.x--;
-        if (38 in keys) this.y--;
-        if (39 in keys) this.x++;
-        if (40 in keys) this.y++;
+        if (37 in keys && this.x > 0) this.x--;
+        if (38 in keys && this.y > 0) this.y--;
+        if (39 in keys && this.x < width) this.x++;
+        if (40 in keys && this.y < height) this.y++;
         console.log(this.x, this.y);
         this.health = Math.min(this.level * 100, this.health + 0.1);
         context.strokeText(Math.round(this.health), this.x, this.y);
@@ -135,7 +135,6 @@ function draw() {
         if (enemies[i].health <= 0) {
             enemies.splice(i, 1);
             i--;
-            kills++;
         }
     }
 
