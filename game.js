@@ -18,7 +18,7 @@ function init() {
     canvas.width = window.innerWidth; //document.width is obsolete
     canvas.height = window.innerHeight;
 
-    context.font = "10px Arial white";
+    context.font = "10px Arial";
     context.textAlign = "center"; 
 
     width = canvas.width;
@@ -28,6 +28,21 @@ function init() {
     kills = 0;
 
     setInterval(draw, 10);
+}
+
+function draw_board() {
+    for (var x = 0; x <= width; x += 40) {
+        context.moveTo(0.5 + x, 0);
+        context.lineTo(0.5 + x, height);
+    }
+
+    for (var x = 0; x <= height; x += 40) {
+        context.moveTo(0, 0.5 + x);
+        context.lineTo(width, 0.5 + x);
+    }
+
+    context.strokeStyle = "#d3d3d3";
+    context.stroke();
 }
 
 function distance(x, y) {
@@ -47,18 +62,20 @@ class Player {
         document.getElementById("level").textContent = this.level;
     }
     render() {
+        // render the player
         context.beginPath();
         context.fillStyle = "green";
-        // Show with and without Math.PI*2 try Math.PI or Math.PI/2
         context.arc(this.x, this.y, 20, 0, Math.PI*2, true);
         context.closePath();
         context.fill();
 
-        if (37 in keys && this.x > 0) this.x--;
-        if (38 in keys && this.y > 0) this.y--;
-        if (39 in keys && this.x < width) this.x++;
-        if (40 in keys && this.y < height) this.y++;
-        console.log(this.x, this.y);
+        // movement and bounds checking
+        if (37 in keys && this.x > 20) this.x--;
+        if (38 in keys && this.y > 20) this.y--;
+        if (39 in keys && this.x < width - 20) this.x++;
+        if (40 in keys && this.y < height - 20) this.y++;
+
+        // health regen
         this.health = Math.min(this.level * 100, this.health + 0.1);
         context.strokeText(Math.round(this.health), this.x, this.y);
     }
@@ -72,13 +89,14 @@ class Enemy {
         this.health = 100;
     }
     render() {
+        // render enemy
         context.beginPath();
         context.fillStyle = "brown";
-        // Show with and without Math.PI*2 try Math.PI or Math.PI/2
         context.arc(this.x, this.y, 20, 0, Math.PI*2, true);
         context.closePath();
         context.fill();
 
+        // movement and collision checking
         var dx = (width / 2 - this.x) / Math.abs(width / 2 - this.x);
         var dy = (height / 2 - this.y) / Math.abs(height / 2 - this.y);
 
@@ -116,8 +134,9 @@ class Enemy {
 }
 
 function draw() {
-    // Show with and without clearRect
     context.clearRect(0, 0, width, height);
+    draw_board();
+    context.strokeStyle = "white";
     if (player != undefined) {
         player.render();
         if (88 in ins) player.upgrade();
