@@ -12,12 +12,16 @@
     </head>
     <script src="game.js"></script>
     <body onload="init();">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item active" aria-current="page">Level: <span id="level">1</span></li>
+                <li class="breadcrumb-item active" aria-current="page">Kills: <span id="kills">0</span></li>
+                <li class="breadcrumb-item active" aria-current="page">Time: <span id="time">0:00</span></li>
+            </ol>
+        </nav>
         <div class="progress" style="width: 100%;">
             <div id="points" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
         </div>
-        <p>Level: <span id="level">1</span></p>
-        <p>Kills: <span id="kills">0</span></p>
-        <p>Time: <span id="time">0:00</span></p>
         <canvas id="myCanvas"></canvas>
     </body>
 </html>
