@@ -3,7 +3,7 @@ var ins = {}, keys = {}, enemies = [];
 
 window.addEventListener('keydown', function(e) {
     if (!(e.keyCode in keys)) ins[e.keyCode] = true;
-    key[e.keyCode] = true;
+    keys[e.keyCode] = true;
     e.preventDefault();
 });
 
@@ -25,6 +25,7 @@ function init() {
     height = canvas.height;
     console.log(width, height);
     player = new Player(width / 2, height / 2);
+    token = new Token(Math.random() * width, Math.random() * height, Math.random() * 100);
     kills = 0;
 
     setInterval(draw, 10);
@@ -54,7 +55,9 @@ class Player {
         this.x = x;
         this.y = y;
         this.level = 1;
-        this.health = this.level * 100;
+        this.health = 100 + this.level *5;
+	this.points = 0
+	this.speed = 1
     }
     upgrade() {
         this.level++;
@@ -62,30 +65,26 @@ class Player {
         document.getElementById("level").textContent = this.level;
     }
     render() {
-        // render the player
         context.beginPath();
         context.fillStyle = "green";
         context.arc(this.x, this.y, 20, 0, Math.PI*2, true);
         context.closePath();
         context.fill();
 
-        // movement and bounds checking
-        if (37 in keys && this.x > 20) this.x--;
-        if (38 in keys && this.y > 20) this.y--;
-        if (39 in keys && this.x < width - 20) this.x++;
-        if (40 in keys && this.y < height - 20) this.y++;
-
-        // health regen
-        this.health = Math.min(this.level * 100, this.health + 0.1);
+        if (37 in keys && this.x > 0) this.x = this.x - 1 - 0.1*this.level;
+        if (38 in keys && this.y > 0) this.y = this.y - 1 - 0.1*this.level;
+        if (39 in keys && this.x < width) this.x = this.x + 1 + 0.1*this.level;
+        if (40 in keys && this.y < height) this.y = this.y + 1 + 0.1*this.level;
+        console.log(this.x, this.y);
+        this.health = Math.min(100 + this.level *5, this.health + 0.1);
         context.strokeText(Math.round(this.health), this.x, this.y);
     }
 }
 
 class Enemy {
-    constructor(x, y, id) {
+    constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.id = id;
         this.health = 100;
     }
     render() {
@@ -97,8 +96,8 @@ class Enemy {
         context.fill();
 
         // movement and collision checking
-        var dx = (width / 2 - this.x) / Math.abs(width / 2 - this.x);
-        var dy = (height / 2 - this.y) / Math.abs(height / 2 - this.y);
+        var dx = (player.x - this.x) / Math.abs(player.x - this.x);
+        var dy = (player.y - this.y) / Math.abs(player.y - this.y);
 
         var move = true, touch_player = false;
         for (var i = 0; i < enemies.length; i++) {
@@ -133,6 +132,30 @@ class Enemy {
     }
 }
 
+class Token {
+	constructor(x, y, points){
+		this.x = x;
+		this.y = y;
+		this.points = points;
+		this.alive = true;
+	}
+	render() {
+        context.beginPath();
+        context.fillStyle = "yellow";
+        // Show with and without Math.PI*2 try Math.PI or Math.PI/2
+        context.arc(this.x, this.y, 10, 0, Math.PI*2, true);
+        context.closePath();
+        context.fill();
+        if (player != undefined) {
+            if (distance(player, this) < 30){
+                this.alive = false;
+                player.points += this.points;
+            }
+        }
+	    context.strokeText(Math.round(this.points), this.x, this.y);
+	}
+}
+
 function draw() {
     context.clearRect(0, 0, width, height);
     draw_board();
@@ -141,6 +164,7 @@ function draw() {
         player.render();
         if (88 in ins) player.upgrade();
     }
+    token.render();
     for (key in ins) keys[key] = true;
     ins = {};
 
@@ -157,7 +181,19 @@ function draw() {
         }
     }
 
-    if (player.health <= 0) {
-        player = undefined;
+    if (token.alive != true) {
+        token = undefined;
+	    token = new Token(Math.random() * width, Math.random() * height, Math.random() * 100)
+    }
+    if (player != undefined) {
+        if (player.health <= 0) {
+            player = undefined;
+            var bruh = new Audio("bruh.mp3"); // buffers automatically when created
+            bruh.play();
+        }
+        if (player.points >= 100) {
+            player.upgrade();
+            player.points = 0;
+        }
     }
 }
