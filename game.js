@@ -1,4 +1,4 @@
-var context, width, height, player;
+var context, width, height, player, laser, token;
 var ins = {}, keys = {}, enemies = [];
 
 window.addEventListener('keydown', function(e) {
@@ -16,7 +16,7 @@ function init() {
     canvas = document.getElementById("myCanvas");
     context = canvas.getContext('2d');
     canvas.width = window.innerWidth; //document.width is obsolete
-    canvas.height = window.innerHeight;
+    canvas.height = window.innerHeight * 0.8;
 
     context.font = "10px Arial";
     context.textAlign = "center"; 
@@ -25,7 +25,7 @@ function init() {
     height = canvas.height;
     console.log(width, height);
     player = new Player(width / 2, height / 2);
-    token = new Token(Math.random() * width, Math.random() * height, Math.random() * 100);
+    token = new Token(Math.random() * width, Math.random() * height, Math.round(Math.random() * 100));
     kills = 0;
 
     setInterval(draw, 10);
@@ -56,13 +56,14 @@ class Player {
         this.y = y;
         this.level = 1;
         this.health = 100 + this.level *5;
-	this.points = 0
-	this.speed = 1
+        this.points = 0;
+        this.speed = 1;
     }
     upgrade() {
         this.level++;
         console.log("upgraded")
         document.getElementById("level").textContent = this.level;
+        this.speed += 0.1;
     }
     render() {
         context.beginPath();
@@ -71,12 +72,12 @@ class Player {
         context.closePath();
         context.fill();
 
-        if (37 in keys && this.x > 0) this.x = this.x - 1 - 0.1*this.level;
-        if (38 in keys && this.y > 0) this.y = this.y - 1 - 0.1*this.level;
-        if (39 in keys && this.x < width) this.x = this.x + 1 + 0.1*this.level;
-        if (40 in keys && this.y < height) this.y = this.y + 1 + 0.1*this.level;
+        if (37 in keys && this.x > 0) this.x -= this.speed;
+        if (38 in keys && this.y > 0) this.y -= this.speed;
+        if (39 in keys && this.x < width) this.x += this.speed;
+        if (40 in keys && this.y < height) this.y += this.speed;
         console.log(this.x, this.y);
-        this.health = Math.min(100 + this.level *5, this.health + 0.1);
+        this.health = Math.min(100 + this.level * 5, this.health + 0.1);
         context.strokeText(Math.round(this.health), this.x, this.y);
     }
 }
@@ -86,6 +87,7 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.health = 100;
+        this.speed = Math.random() * (player.speed) + player.speed;
     }
     render() {
         // render enemy
@@ -105,8 +107,8 @@ class Enemy {
             if (dist < 40 && dist != 0) {
                 var dxt = (this.x - enemies[i].x) / Math.abs(this.x - enemies[i].x);
                 var dyt = (this.y - enemies[i].y) / Math.abs(this.y - enemies[i].y);
-                this.x += dxt;
-                this.y += dyt;
+                this.x += dxt * this.speed;
+                this.y += dyt * this.speed;
                 move = false;
             }
         }
@@ -116,8 +118,8 @@ class Enemy {
                 touch_player = true;
                 var dxt = (this.x - player.x) / Math.abs(this.x - player.x);
                 var dyt = (this.y - player.y) / Math.abs(this.y - player.y);
-                this.x += dxt;
-                this.y += dyt;
+                this.x += dxt * player.speed;
+                this.y += dyt * player.speed;
                 move = false;
                 this.health -= 0.1;
                 player.health -= 0.2;
@@ -125,8 +127,8 @@ class Enemy {
         }
 
         if (move && !touch_player) {
-            this.x += dx * Math.random();
-            this.y += dy * Math.random();
+            this.x += dx * Math.random() * this.speed;
+            this.y += dy * Math.random() * this.speed;
         }
         context.strokeText(Math.round(this.health), this.x, this.y);
     }
@@ -156,44 +158,79 @@ class Token {
 	}
 }
 
+
+class Laser {
+    constructor(x, y, damage) {
+        this.x = x;
+	    this.y = y;
+	    this.damage = damage;
+	    this.frame = 0
+    }
+
+    render() {
+	    context.beginPath();
+        context.strokeStyle = "red";
+        // Show with and without Math.PI*2 try Math.PI or Math.PI/2
+        context.moveTo(this.x, this.y);
+	    context.lineTo(player.x, player.y);
+        context.closePath();
+        context.stroke();
+	    this.frame++;	
+    }
+}
+
 function draw() {
     context.clearRect(0, 0, width, height);
     draw_board();
     context.strokeStyle = "white";
-    if (player != undefined) {
-        player.render();
-        if (88 in ins) player.upgrade();
-    }
     token.render();
     for (key in ins) keys[key] = true;
     ins = {};
 
-    if (Math.random() < 0.1 && enemies.length < 5) {
-        var enemy = new Enemy(Math.random() * width, Math.random() * height);
-        enemies.push(enemy);
-    }
-
-    for (var i = 0; i < enemies.length; i++) {
-        enemies[i].render();
-        if (enemies[i].health <= 0) {
-            enemies.splice(i, 1);
-            i--;
-        }
-    }
-
     if (token.alive != true) {
         token = undefined;
-	    token = new Token(Math.random() * width, Math.random() * height, Math.random() * 100)
+	    token = new Token(Math.random() * width, Math.random() * height, Math.round(Math.random() * 100))
     }
     if (player != undefined) {
+        player.render();
+        if (88 in ins) player.upgrade();
+        if (Math.random() < 0.1 && enemies.length < player.level + 4) {
+            var enemy = new Enemy(Math.random() * width, Math.random() * height);
+            enemies.push(enemy);
+        }
+
+        for (var i = 0; i < enemies.length; i++) {
+            enemies[i].render();
+            if (enemies[i].health <= 0) {
+                enemies.splice(i, 1);
+                kills++;
+                document.getElementById("kills").textContent = kills;
+                i--;
+            }
+        }
+
+        if (player.points >= 100) {
+            player.upgrade();
+            player.points %= 100;
+            laser = new Laser(0, Math.random()*height, Math.random()*100);
+            player.health -= laser.damage;
+            var pewpew = new Audio("pewpew.mp3"); // buffers automatically when created
+            pewpew.play();
+        }
+
         if (player.health <= 0) {
             player = undefined;
             var bruh = new Audio("bruh.mp3"); // buffers automatically when created
             bruh.play();
         }
-        if (player.points >= 100) {
-            player.upgrade();
-            player.points = 0;
-        }
     }
+
+    document.getElementById("time").textContent = (performance.now() / 1000).toFixed(2);
+    var bar = document.getElementById("points");
+    bar.textContent = player.points + "%";
+    bar.style = "width:" + player.points + "%";
+
+    if (laser != undefined && laser.frame <= 30){
+        laser.render()
+    } 
 }
